@@ -8,10 +8,11 @@ from typing import Any
 
 from .ollama import OllamaConfig
 
-CONFIG_KEYS = {"model", "ollama_url", "timeout", "preview_size"}
+CONFIG_KEYS = {"model", "ollama_url", "prompt_guidance", "timeout", "preview_size"}
 ENV_KEYS = {
     "model": "RENAIM_MODEL",
     "ollama_url": "RENAIM_OLLAMA_URL",
+    "prompt_guidance": "RENAIM_PROMPT_GUIDANCE",
     "timeout": "RENAIM_TIMEOUT",
     "preview_size": "RENAIM_PREVIEW_SIZE",
 }
@@ -21,6 +22,7 @@ ENV_KEYS = {
 class Settings:
     model: str = OllamaConfig.model
     ollama_url: str = OllamaConfig.url
+    prompt_guidance: str = ""
     timeout: float = OllamaConfig.timeout
     preview_size: int = 1024
 
@@ -103,6 +105,7 @@ def default_values() -> dict[str, Any]:
     return {
         "model": settings.model,
         "ollama_url": settings.ollama_url,
+        "prompt_guidance": settings.prompt_guidance,
         "timeout": settings.timeout,
         "preview_size": settings.preview_size,
     }
@@ -126,6 +129,7 @@ def resolve_settings(
     *,
     model: str | None = None,
     ollama_url: str | None = None,
+    prompt_guidance: str | None = None,
     timeout: float | None = None,
     preview_size: int | None = None,
 ) -> Settings:
@@ -133,6 +137,7 @@ def resolve_settings(
         {
             "model": model,
             "ollama_url": ollama_url,
+            "prompt_guidance": prompt_guidance,
             "timeout": timeout,
             "preview_size": preview_size,
         }
@@ -140,13 +145,14 @@ def resolve_settings(
     return Settings(
         model=str(resolved["model"][0]),
         ollama_url=str(resolved["ollama_url"][0]),
+        prompt_guidance=str(resolved["prompt_guidance"][0]),
         timeout=float(resolved["timeout"][0]),
         preview_size=int(resolved["preview_size"][0]),
     )
 
 
 def parse_config_value(key: str, value: Any) -> str | float | int:
-    if key in {"model", "ollama_url"}:
+    if key in {"model", "ollama_url", "prompt_guidance"}:
         if not isinstance(value, str):
             raise ValueError(f"{key} must be a string")
         return value

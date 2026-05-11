@@ -64,6 +64,17 @@ PreviewSizeOpt = Annotated[
     int | None,
     typer.Option("--preview-size", help="Maximum preview image dimension. Overrides RENAIM_PREVIEW_SIZE and config."),
 ]
+PromptGuidanceOpt = Annotated[
+    str | None,
+    typer.Option(
+        "--prompt-guidance",
+        help="Extra prompt guidance, such as 'use UK English'. Overrides RENAIM_PROMPT_GUIDANCE and config.",
+    ),
+]
+IncludeDescriptiveOpt = Annotated[
+    bool,
+    typer.Option("--include-descriptive", help="Also index files whose names already look descriptive."),
+]
 
 
 @config_app.command("path")
@@ -117,11 +128,16 @@ def config_file() -> None:
 
 
 @app.command()
-def scan(root: RootArg, db: DbOpt = None, include_hidden: HiddenOpt = False) -> None:
+def scan(
+    root: RootArg,
+    db: DbOpt = None,
+    include_hidden: HiddenOpt = False,
+    include_descriptive: IncludeDescriptiveOpt = False,
+) -> None:
     """Index image files without asking the model or renaming anything."""
     database = open_db(root, db)
     try:
-        scan_operation(database, root, include_hidden=include_hidden, console=console)
+        scan_operation(database, root, include_hidden=include_hidden, console=console, skip_descriptive=not include_descriptive)
         console.print(f"Audit database: [dim]{database.path}[/dim]")
     finally:
         database.close()
@@ -134,23 +150,37 @@ def suggest(
     include_hidden: HiddenOpt = False,
     model: ModelOpt = None,
     ollama_url: UrlOpt = None,
+    prompt_guidance: PromptGuidanceOpt = None,
     timeout: TimeoutOpt = None,
     limit: Annotated[int | None, typer.Option("--limit", help="Maximum number of photos to suggest.")] = None,
     force: Annotated[bool, typer.Option("--force", help="Create fresh suggestions even when one already exists.")] = False,
     preview_size: PreviewSizeOpt = None,
+    include_descriptive: IncludeDescriptiveOpt = False,
     rescan: Annotated[
         bool,
         typer.Option("--rescan", help="Scan the directory before suggesting. Defaults on only when no DB exists."),
     ] = False,
 ) -> None:
     """Generate and store rename suggestions."""
-    settings = resolve_settings(model=model, ollama_url=ollama_url, timeout=timeout, preview_size=preview_size)
+    settings = resolve_settings(
+        model=model,
+        ollama_url=ollama_url,
+        prompt_guidance=prompt_guidance,
+        timeout=timeout,
+        preview_size=preview_size,
+    )
     db_path = resolved_db_path(root, db)
     should_scan = rescan or not db_path.exists()
     database = open_db(root, db)
     try:
         if should_scan:
-            scan_operation(database, root, include_hidden=include_hidden, console=console)
+            scan_operation(
+                database,
+                root,
+                include_hidden=include_hidden,
+                console=console,
+                skip_descriptive=not include_descriptive,
+            )
         else:
             console.print(f"Using existing index from [dim]{database.path}[/dim]. Pass [bold]--rescan[/bold] to scan first.")
         suggest_operation(
@@ -162,6 +192,7 @@ def suggest(
             limit=limit,
             force=force,
             preview_size=settings.preview_size,
+            prompt_guidance=settings.prompt_guidance,
             console=console,
         )
         console.print(f"Audit database: [dim]{database.path}[/dim]")
@@ -249,10 +280,12 @@ def run(
     include_hidden: HiddenOpt = False,
     model: ModelOpt = None,
     ollama_url: UrlOpt = None,
+    prompt_guidance: PromptGuidanceOpt = None,
     timeout: TimeoutOpt = None,
     limit: Annotated[int | None, typer.Option("--limit", help="Maximum number of photos to process.")] = None,
     force: Annotated[bool, typer.Option("--force", help="Create fresh suggestions even when one already exists.")] = False,
     preview_size: PreviewSizeOpt = None,
+    include_descriptive: IncludeDescriptiveOpt = False,
     harmonize_changes: Annotated[
         bool,
         typer.Option("--harmonize", help="Merge near-duplicate labels before applying."),
@@ -270,10 +303,22 @@ def run(
         apply_changes = True
         yes = True
 
-    settings = resolve_settings(model=model, ollama_url=ollama_url, timeout=timeout, preview_size=preview_size)
+    settings = resolve_settings(
+        model=model,
+        ollama_url=ollama_url,
+        prompt_guidance=prompt_guidance,
+        timeout=timeout,
+        preview_size=preview_size,
+    )
     database = open_db(root, db)
     try:
-        scan_operation(database, root, include_hidden=include_hidden, console=console)
+        scan_operation(
+            database,
+            root,
+            include_hidden=include_hidden,
+            console=console,
+            skip_descriptive=not include_descriptive,
+        )
         suggest_operation(
             database,
             root,
@@ -283,6 +328,7 @@ def run(
             limit=limit,
             force=force,
             preview_size=settings.preview_size,
+            prompt_guidance=settings.prompt_guidance,
             console=console,
         )
         if harmonize_changes:

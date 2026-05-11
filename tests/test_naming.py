@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from photo_renamer.naming import clean_model_phrase, proposed_filename, slugify, unique_path
+from photo_renamer.naming import clean_model_phrase, is_descriptive_filename, proposed_filename, slugify, unique_path
 
 
 def test_slugify_removes_punctuation_and_normalizes_spaces():
@@ -24,3 +24,10 @@ def test_unique_path_preserves_original_name_with_suffix(tmp_path):
     target.write_text("existing")
 
     assert unique_path(target, source).name == "family-at-table-2_P1120366.RW2"
+
+
+def test_is_descriptive_filename_skips_named_files_but_not_camera_files():
+    assert is_descriptive_filename(Path("paddling-pool-1.jpg"))
+    assert is_descriptive_filename(Path("little-girl-playing-with-mum_DSC02262.JPG"))
+    assert not is_descriptive_filename(Path("DSC02262.JPG"))
+    assert not is_descriptive_filename(Path("P1190726.jpg"))

@@ -12,8 +12,8 @@ from rich.table import Table
 from .database import Database
 from .harmonize import HarmonizeGroup, harmonize_groups
 from .images import PreviewError, preview_image
-from .naming import clean_model_phrase, is_image, proposed_path, slugify, unique_path
-from .ollama import OllamaClient, OllamaConfig, PROMPT_VERSION
+from .naming import clean_model_phrase, is_descriptive_filename, is_image, proposed_path, slugify, unique_path
+from .ollama import OllamaClient, OllamaConfig, PROMPT_VERSION, build_prompt
 
 
 @dataclass(frozen=True)
@@ -32,10 +32,10 @@ def default_db_path(root: Path) -> Path:
     return root / ".renaim.sqlite3"
 
 
-def iter_images(root: Path, include_hidden: bool = False):
+def iter_images(root: Path, include_hidden: bool = False, skip_descriptive: bool = True):
     root = root.expanduser().resolve()
     if root.is_file():
-        if is_image(root):
+        if is_image(root) and not (skip_descriptive and is_descriptive_filename(root)):
             yield root
         return
 
@@ -50,7 +50,7 @@ def iter_images(root: Path, include_hidden: bool = False):
             path = Path(directory) / filename
             if path.name in {".photo-renamer.sqlite3", ".renaim.sqlite3"}:
                 continue
-            if is_image(path):
+            if is_image(path) and not (skip_descriptive and is_descriptive_filename(path)):
                 yield path
 
 
@@ -67,13 +67,13 @@ def iter_image_dirs(root: Path, include_hidden: bool = False):
         yield Path(directory), filenames
 
 
-def scan(db: Database, root: Path, include_hidden: bool, console: Console) -> ScanResult:
+def scan(db: Database, root: Path, include_hidden: bool, console: Console, skip_descriptive: bool = True) -> ScanResult:
     root = root.expanduser().resolve()
     count = 0
     dirs = 0
 
     if root.is_file():
-        paths = list(iter_images(root, include_hidden=include_hidden))
+        paths = list(iter_images(root, include_hidden=include_hidden, skip_descriptive=skip_descriptive))
         for path in paths:
             db.upsert_photo(root, path)
         console.print(f"Indexed [bold]{len(paths)}[/bold] image files.")
@@ -98,6 +98,8 @@ def scan(db: Database, root: Path, include_hidden: bool, console: Console) -> Sc
                     continue
                 if not is_image(path):
                     continue
+                if skip_descriptive and is_descriptive_filename(path):
+                    continue
                 db.upsert_photo(root, path)
                 count += 1
                 progress.update(task, description=f"Scanning {directory} ({count} images, {dirs} dirs)")
@@ -115,9 +117,11 @@ def suggest(
     limit: int | None,
     force: bool,
     preview_size: int,
+    prompt_guidance: str,
     console: Console,
 ) -> int:
-    client = OllamaClient(OllamaConfig(model=model, url=ollama_url, timeout=timeout))
+    prompt = build_prompt(prompt_guidance)
+    client = OllamaClient(OllamaConfig(model=model, url=ollama_url, timeout=timeout, prompt=prompt))
     photos = db.photos_for_suggestions(root, force=force)
     if limit is not None:
         photos = photos[:limit]
@@ -155,7 +159,7 @@ def suggest(
                     photo_id=photo.id,
                     model=model,
                     prompt_version=PROMPT_VERSION,
-                    prompt=OllamaConfig().prompt,
+                    prompt=prompt,
                     response=response,
                     slug=slug,
                     proposed_name=target.name,

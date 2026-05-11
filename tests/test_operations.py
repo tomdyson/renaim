@@ -60,6 +60,19 @@ def test_iter_images_streams_sorted_images_without_hidden_or_db_files(tmp_path: 
     assert [path.name for path in iter_images(root, include_hidden=False)] == ["a.RW2", "b.jpg"]
 
 
+def test_iter_images_skips_descriptive_filenames_by_default(tmp_path: Path):
+    root = tmp_path / "photos"
+    root.mkdir()
+    (root / "DSC02262.JPG").write_bytes(b"fake")
+    (root / "paddling-pool-1.jpg").write_bytes(b"fake")
+
+    assert [path.name for path in iter_images(root, include_hidden=False)] == ["DSC02262.JPG"]
+    assert [path.name for path in iter_images(root, include_hidden=False, skip_descriptive=False)] == [
+        "DSC02262.JPG",
+        "paddling-pool-1.jpg",
+    ]
+
+
 def test_repair_reopens_suggestions_from_old_undo_state(tmp_path: Path):
     root = tmp_path / "photos"
     root.mkdir()

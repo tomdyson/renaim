@@ -15,12 +15,14 @@ def test_config_env_and_cli_precedence(monkeypatch: pytest.MonkeyPatch, tmp_path
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
     set_config_value("model", "config-model")
     set_config_value("ollama_url", "http://config.example:11434")
+    set_config_value("prompt_guidance", "use UK English")
     monkeypatch.setenv("RENAIM_MODEL", "env-model")
 
     settings = resolve_settings(model="cli-model")
 
     assert settings.model == "cli-model"
     assert settings.ollama_url == "http://config.example:11434"
+    assert settings.prompt_guidance == "use UK English"
 
 
 def test_unset_config_value(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):

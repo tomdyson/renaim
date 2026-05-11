@@ -28,6 +28,13 @@ children opening presents
 """
 
 
+def build_prompt(guidance: str | None = None) -> str:
+    guidance = (guidance or "").strip()
+    if not guidance:
+        return DEFAULT_PROMPT
+    return f"{DEFAULT_PROMPT}\nAdditional user guidance:\n{guidance}\n"
+
+
 @dataclass(frozen=True)
 class OllamaConfig:
     model: str = "gemma4:e4b"

@@ -68,9 +68,38 @@ RAW_EXTENSIONS = {
     ".x3f",
 }
 
+CAMERA_FILENAME_RE = re.compile(
+    r"^(?:dsc|dscf|dscn|img|image|p|pxl|sam|_mg|r?img)[-_]?\d+[a-z]?$|^\d{6,}$",
+    re.IGNORECASE,
+)
+DESCRIPTIVE_STOPWORDS = {
+    "a",
+    "an",
+    "and",
+    "at",
+    "by",
+    "for",
+    "in",
+    "of",
+    "on",
+    "the",
+    "to",
+    "with",
+}
+
 
 def is_image(path: Path) -> bool:
     return path.suffix.lower() in IMAGE_EXTENSIONS
+
+
+def is_descriptive_filename(path: Path) -> bool:
+    stem = path.stem.strip().lower()
+    if not stem:
+        return False
+    if CAMERA_FILENAME_RE.match(stem):
+        return False
+    tokens = [token for token in re.split(r"[^a-z]+", stem) if token and token not in DESCRIPTIVE_STOPWORDS]
+    return len(tokens) >= 2
 
 
 def slugify(text: str, fallback: str = "photo") -> str:

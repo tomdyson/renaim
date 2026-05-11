@@ -38,10 +38,19 @@ uvx renaim scan ~/Pictures/Photos
 `scan` streams progress while walking directories, which is useful on NAS
 folders where the first traversal can take a while.
 
+Files whose names already look descriptive, such as `paddling-pool-1.jpg`, are
+skipped by default. Pass `--include-descriptive` if you want to index them too.
+
 Generate suggestions:
 
 ```bash
 uvx renaim suggest ~/Pictures/Photos --model gemma4:e4b
+```
+
+Add extra guidance for the captioning model when needed:
+
+```bash
+uvx renaim suggest ~/Pictures/Photos --prompt-guidance "use UK English"
 ```
 
 If the audit DB already exists, `suggest` reuses the existing index. Pass
@@ -180,6 +189,7 @@ Set your usual model:
 ```bash
 uvx renaim config set model gemma4:e4b
 uvx renaim config set ollama_url http://localhost:11434
+uvx renaim config set prompt_guidance "use UK English"
 uvx renaim config set timeout 180
 uvx renaim config set preview_size 1024
 ```
@@ -195,6 +205,7 @@ Supported environment variables:
 ```bash
 RENAIM_MODEL=gemma4:e4b
 RENAIM_OLLAMA_URL=http://localhost:11434
+RENAIM_PROMPT_GUIDANCE="use UK English"
 RENAIM_TIMEOUT=180
 RENAIM_PREVIEW_SIZE=1024
 ```
