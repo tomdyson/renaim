@@ -27,21 +27,12 @@ ollama pull gemma4:e4b
 
 If you prefer another model, pass `--model`.
 
-## Install for development
-
-```bash
-uv sync --extra dev
-uv run renaim --help
-```
-
-The package exposes the `renaim` command.
-
 ## Typical workflow
 
 Index files without touching the model:
 
 ```bash
-uv run renaim scan ~/Pictures/Photos
+uvx renaim scan ~/Pictures/Photos
 ```
 
 `scan` streams progress while walking directories, which is useful on NAS
@@ -50,44 +41,44 @@ folders where the first traversal can take a while.
 Generate suggestions:
 
 ```bash
-uv run renaim suggest ~/Pictures/Photos --model gemma4:e4b
+uvx renaim suggest ~/Pictures/Photos --model gemma4:e4b
 ```
 
 If the audit DB already exists, `suggest` reuses the existing index. Pass
 `--rescan` to walk the folder again before suggesting:
 
 ```bash
-uv run renaim suggest ~/Pictures/Photos --rescan
+uvx renaim suggest ~/Pictures/Photos --rescan
 ```
 
 Review and optionally edit suggestions:
 
 ```bash
-uv run renaim review ~/Pictures/Photos
+uvx renaim review ~/Pictures/Photos
 ```
 
 Harmonize near-duplicate labels across the folder:
 
 ```bash
-uv run renaim harmonize ~/Pictures/Photos
+uvx renaim harmonize ~/Pictures/Photos
 ```
 
 Apply approved or pending suggestions:
 
 ```bash
-uv run renaim apply ~/Pictures/Photos
+uvx renaim apply ~/Pictures/Photos
 ```
 
 Undo the latest apply batch:
 
 ```bash
-uv run renaim undo ~/Pictures/Photos
+uvx renaim undo ~/Pictures/Photos
 ```
 
 Show previous batches:
 
 ```bash
-uv run renaim batches ~/Pictures/Photos
+uvx renaim batches ~/Pictures/Photos
 ```
 
 ## All-night NAS run
@@ -96,7 +87,7 @@ For unattended operation, keep the audit DB somewhere local and explicitly opt i
 to harmonizing and renaming:
 
 ```bash
-uv run renaim run /Volumes/photos/archive \
+uvx renaim run /Volumes/photos/archive \
   --db ~/.local/state/renaim/archive.sqlite3 \
   --model gemma4:e4b \
   --harmonize \
@@ -109,7 +100,7 @@ Without `--apply`, `run` only scans and stores suggestions.
 The shortcut form is:
 
 ```bash
-uv run renaim run /Volumes/photos/archive \
+uvx renaim run /Volumes/photos/archive \
   --db ~/.local/state/renaim/archive.sqlite3 \
   --model gemma4:e4b \
   --yolo
@@ -181,22 +172,22 @@ CLI flags > environment variables > ~/.config/renaim/config.toml > defaults
 Show the effective config:
 
 ```bash
-uv run renaim config show
+uvx renaim config show
 ```
 
 Set your usual model:
 
 ```bash
-uv run renaim config set model gemma4:e4b
-uv run renaim config set ollama_url http://localhost:11434
-uv run renaim config set timeout 180
-uv run renaim config set preview_size 1024
+uvx renaim config set model gemma4:e4b
+uvx renaim config set ollama_url http://localhost:11434
+uvx renaim config set timeout 180
+uvx renaim config set preview_size 1024
 ```
 
 Unset a value:
 
 ```bash
-uv run renaim config unset model
+uvx renaim config unset model
 ```
 
 Supported environment variables:
@@ -213,13 +204,13 @@ RENAIM_PREVIEW_SIZE=1024
 Limit a trial run:
 
 ```bash
-uv run renaim suggest ~/Pictures/Photos --limit 20
+uvx renaim suggest ~/Pictures/Photos --limit 20
 ```
 
 Use another Ollama server or model:
 
 ```bash
-uv run renaim suggest ~/Pictures/Photos \
+uvx renaim suggest ~/Pictures/Photos \
   --ollama-url http://nas.local:11434 \
   --model llava:13b
 ```
@@ -227,18 +218,28 @@ uv run renaim suggest ~/Pictures/Photos \
 Apply only suggestions explicitly approved in `review`:
 
 ```bash
-uv run renaim apply ~/Pictures/Photos --approved-only
+uvx renaim apply ~/Pictures/Photos --approved-only
 ```
 
 Preview label harmonization without changing suggestions:
 
 ```bash
-uv run renaim harmonize ~/Pictures/Photos --dry-run
+uvx renaim harmonize ~/Pictures/Photos --dry-run
 ```
 
 For unattended runs, accept the default canonical label for each near-duplicate
 group:
 
 ```bash
-uv run renaim harmonize ~/Pictures/Photos --yes
+uvx renaim harmonize ~/Pictures/Photos --yes
+```
+
+## Development
+
+For local development:
+
+```bash
+uv sync --extra dev
+uv run renaim --help
+uv run pytest
 ```
