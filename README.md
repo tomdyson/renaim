@@ -53,6 +53,13 @@ Generate suggestions:
 uv run renaim suggest ~/Pictures/Photos --model gemma4:e4b
 ```
 
+If the audit DB already exists, `suggest` reuses the existing index. Pass
+`--rescan` to walk the folder again before suggesting:
+
+```bash
+uv run renaim suggest ~/Pictures/Photos --rescan
+```
+
 Review and optionally edit suggestions:
 
 ```bash

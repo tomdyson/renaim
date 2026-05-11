@@ -41,6 +41,10 @@ def open_db(root: Path, db_path: Path | None) -> Database:
     return Database(path)
 
 
+def resolved_db_path(root: Path, db_path: Path | None) -> Path:
+    return db_path.expanduser() if db_path else default_db_path(root)
+
+
 RootArg = Annotated[Path, typer.Argument(help="Photo file or directory to process.")]
 DbOpt = Annotated[Path | None, typer.Option("--db", help="SQLite audit database path.")]
 HiddenOpt = Annotated[bool, typer.Option("--include-hidden", help="Include hidden files and directories.")]
@@ -134,12 +138,21 @@ def suggest(
     limit: Annotated[int | None, typer.Option("--limit", help="Maximum number of photos to suggest.")] = None,
     force: Annotated[bool, typer.Option("--force", help="Create fresh suggestions even when one already exists.")] = False,
     preview_size: PreviewSizeOpt = None,
+    rescan: Annotated[
+        bool,
+        typer.Option("--rescan", help="Scan the directory before suggesting. Defaults on only when no DB exists."),
+    ] = False,
 ) -> None:
     """Generate and store rename suggestions."""
     settings = resolve_settings(model=model, ollama_url=ollama_url, timeout=timeout, preview_size=preview_size)
+    db_path = resolved_db_path(root, db)
+    should_scan = rescan or not db_path.exists()
     database = open_db(root, db)
     try:
-        scan_operation(database, root, include_hidden=include_hidden, console=console)
+        if should_scan:
+            scan_operation(database, root, include_hidden=include_hidden, console=console)
+        else:
+            console.print(f"Using existing index from [dim]{database.path}[/dim]. Pass [bold]--rescan[/bold] to scan first.")
         suggest_operation(
             database,
             root,
