@@ -1,0 +1,10 @@
+.DS_Store
+.pytest_cache/
+.venv/
+__pycache__/
+*.pyc
+.photo-renamer.sqlite3
+.renaim.sqlite3
+dist/
+build/
+*.egg-info/

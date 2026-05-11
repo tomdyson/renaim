@@ -1,0 +1,52 @@
+[project]
+name = "renaim"
+version = "0.1.0"
+description = "Rename photos using local Ollama vision models with SQLite audit and undo."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+keywords = ["photos", "ollama", "rename", "raw", "cli"]
+authors = [
+    { name = "Tom Dyson" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "requests>=2.31",
+    "rich>=13.7",
+    "typer>=0.12",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+renaim = "photo_renamer.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/tomdyson/renaim"
+Repository = "https://github.com/tomdyson/renaim"
+Issues = "https://github.com/tomdyson/renaim/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/photo_renamer"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
