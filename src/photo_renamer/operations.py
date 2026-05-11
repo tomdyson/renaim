@@ -32,15 +32,18 @@ def default_db_path(root: Path) -> Path:
     return root / ".renaim.sqlite3"
 
 
-def iter_images(root: Path, include_hidden: bool = False) -> list[Path]:
+def iter_images(root: Path, include_hidden: bool = False):
     root = root.expanduser().resolve()
     if root.is_file():
-        return [root] if is_image(root) else []
+        if is_image(root):
+            yield root
+        return
 
-    images: list[Path] = []
     for directory, dirnames, filenames in os.walk(root):
         if not include_hidden:
             dirnames[:] = [name for name in dirnames if not name.startswith(".")]
+        dirnames.sort()
+        filenames.sort()
         for filename in filenames:
             if not include_hidden and filename.startswith("."):
                 continue
@@ -48,16 +51,59 @@ def iter_images(root: Path, include_hidden: bool = False) -> list[Path]:
             if path.name in {".photo-renamer.sqlite3", ".renaim.sqlite3"}:
                 continue
             if is_image(path):
-                images.append(path)
-    return sorted(images)
+                yield path
+
+
+def iter_image_dirs(root: Path, include_hidden: bool = False):
+    root = root.expanduser().resolve()
+    if root.is_file():
+        return
+
+    for directory, dirnames, filenames in os.walk(root):
+        if not include_hidden:
+            dirnames[:] = [name for name in dirnames if not name.startswith(".")]
+        dirnames.sort()
+        filenames.sort()
+        yield Path(directory), filenames
 
 
 def scan(db: Database, root: Path, include_hidden: bool, console: Console) -> ScanResult:
-    paths = iter_images(root, include_hidden=include_hidden)
-    for path in paths:
-        db.upsert_photo(root, path)
-    console.print(f"Indexed [bold]{len(paths)}[/bold] image files.")
-    return ScanResult(found=len(paths))
+    root = root.expanduser().resolve()
+    count = 0
+    dirs = 0
+
+    if root.is_file():
+        paths = list(iter_images(root, include_hidden=include_hidden))
+        for path in paths:
+            db.upsert_photo(root, path)
+        console.print(f"Indexed [bold]{len(paths)}[/bold] image files.")
+        return ScanResult(found=len(paths))
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        TimeElapsedColumn(),
+        console=console,
+        transient=True,
+    ) as progress:
+        task = progress.add_task("Scanning directories", total=None)
+        for directory, filenames in iter_image_dirs(root, include_hidden=include_hidden):
+            dirs += 1
+            progress.update(task, description=f"Scanning {directory} ({count} images, {dirs} dirs)")
+            for filename in filenames:
+                if not include_hidden and filename.startswith("."):
+                    continue
+                path = directory / filename
+                if path.name in {".photo-renamer.sqlite3", ".renaim.sqlite3"}:
+                    continue
+                if not is_image(path):
+                    continue
+                db.upsert_photo(root, path)
+                count += 1
+                progress.update(task, description=f"Scanning {directory} ({count} images, {dirs} dirs)")
+
+    console.print(f"Indexed [bold]{count}[/bold] image files across [bold]{dirs}[/bold] directories.")
+    return ScanResult(found=count)
 
 
 def suggest(

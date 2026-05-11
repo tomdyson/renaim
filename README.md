@@ -44,6 +44,9 @@ Index files without touching the model:
 uv run renaim scan ~/Pictures/Photos
 ```
 
+`scan` streams progress while walking directories, which is useful on NAS
+folders where the first traversal can take a while.
+
 Generate suggestions:
 
 ```bash

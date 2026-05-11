@@ -5,7 +5,7 @@ from pathlib import Path
 from rich.console import Console
 
 from photo_renamer.database import Database
-from photo_renamer.operations import apply_renames, harmonize, scan, undo
+from photo_renamer.operations import apply_renames, harmonize, iter_images, scan, undo
 
 
 def test_apply_and_undo_preserve_mtime_and_restore_path(tmp_path: Path):
@@ -46,6 +46,18 @@ def test_apply_and_undo_preserve_mtime_and_restore_path(tmp_path: Path):
         assert suggestions[0].status == "pending"
     finally:
         db.close()
+
+
+def test_iter_images_streams_sorted_images_without_hidden_or_db_files(tmp_path: Path):
+    root = tmp_path / "photos"
+    root.mkdir()
+    (root / "b.jpg").write_bytes(b"fake")
+    (root / "a.RW2").write_bytes(b"fake")
+    (root / ".hidden.jpg").write_bytes(b"fake")
+    (root / ".renaim.sqlite3").write_bytes(b"db")
+    (root / "notes.txt").write_text("no")
+
+    assert [path.name for path in iter_images(root, include_hidden=False)] == ["a.RW2", "b.jpg"]
 
 
 def test_repair_reopens_suggestions_from_old_undo_state(tmp_path: Path):
